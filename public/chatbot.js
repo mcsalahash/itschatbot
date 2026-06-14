@@ -129,11 +129,14 @@
     inputEl.focus();
   }
 
+  var labelEl;
+
   function togglePanel() {
     isOpen = !isOpen;
     if (isOpen) {
       panel.classList.add('tsb-open');
       bubble.setAttribute('aria-expanded', 'true');
+      if (labelEl) labelEl.classList.add('tsb-hidden');
       inputEl.focus();
       if (getHistory().length === 0 && messagesEl.children.length === 0) {
         showWelcome();
@@ -145,6 +148,16 @@
   }
 
   function buildWidget() {
+    // Wrapper
+    var wrapper = document.createElement('div');
+    wrapper.className = 'tsb-bubble-wrapper';
+
+    // Label
+    labelEl = document.createElement('div');
+    labelEl.className = 'tsb-bubble-label';
+    labelEl.textContent = '💬 Besoin d\'aide ?';
+    labelEl.addEventListener('click', togglePanel);
+
     // Bubble button
     bubble = document.createElement('button');
     bubble.className = 'tsb-bubble';
@@ -234,7 +247,9 @@
     panel.appendChild(messagesEl);
     panel.appendChild(inputArea);
 
-    document.body.appendChild(bubble);
+    wrapper.appendChild(labelEl);
+    wrapper.appendChild(bubble);
+    document.body.appendChild(wrapper);
     document.body.appendChild(panel);
   }
 

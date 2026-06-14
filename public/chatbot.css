@@ -10,12 +10,50 @@
   --tsb-radius: 16px;
 }
 
-/* Floating bubble */
-.tsb-bubble {
+/* Floating bubble wrapper */
+.tsb-bubble-wrapper {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Label "Besoin d'aide ?" */
+.tsb-bubble-label {
+  background: var(--tsb-white);
+  color: var(--tsb-primary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1.5px solid var(--tsb-primary);
+  transition: background 0.2s, color 0.2s;
+  animation: tsb-label-in 0.4s ease 1.5s both;
+}
+
+.tsb-bubble-label:hover {
+  background: var(--tsb-primary);
+  color: var(--tsb-white);
+}
+
+.tsb-bubble-label.tsb-hidden {
+  display: none;
+}
+
+@keyframes tsb-label-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Floating bubble */
+.tsb-bubble {
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -29,6 +67,7 @@
   box-shadow: var(--tsb-shadow);
   transition: background 0.2s, transform 0.2s;
   outline: none;
+  animation: tsb-pulse 2.5s ease-in-out 2s 3;
 }
 
 .tsb-bubble:hover {
@@ -44,6 +83,11 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+@keyframes tsb-pulse {
+  0%, 100% { box-shadow: var(--tsb-shadow); }
+  50%       { box-shadow: 0 0 0 10px rgba(0, 131, 143, 0.2), var(--tsb-shadow); }
 }
 
 /* Chat panel */
@@ -338,7 +382,7 @@
     transform-origin: bottom center;
   }
 
-  .tsb-bubble {
+  .tsb-bubble-wrapper {
     bottom: 16px;
     right: 16px;
   }
