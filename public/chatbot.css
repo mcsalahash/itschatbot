@@ -112,7 +112,7 @@
 }
 
 .tsb-panel.tsb-open {
-  transform: scale(1) translateY(0);
+  transform: none;
   opacity: 1;
   pointer-events: all;
 }
@@ -185,11 +185,14 @@
 /* Messages area */
 .tsb-messages {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
 }
 
 .tsb-messages::-webkit-scrollbar {
