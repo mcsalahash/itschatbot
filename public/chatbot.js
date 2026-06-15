@@ -90,6 +90,99 @@
     scrollToBottom();
   }
 
+  var FORM_MARKER = /\[SHOW_CONTACT_FORM:(inscription|contact)\]/;
+
+  function parseReply(raw) {
+    var match = raw.match(FORM_MARKER);
+    var type = match ? match[1] : null;
+    var text = raw.replace(FORM_MARKER, '').trim();
+    return { text: text, formType: type };
+  }
+
+  function showContactForm(type) {
+    var titles = {
+      inscription: '📋 Demande d\'inscription',
+      contact: '✉️ Message à la direction',
+    };
+    var form = document.createElement('div');
+    form.className = 'tsb-contact-form';
+
+    var title = document.createElement('div');
+    title.className = 'tsb-contact-form-title';
+    title.textContent = titles[type] || '✉️ Nous contacter';
+    form.appendChild(title);
+
+    function field(placeholder, type_) {
+      var el = document.createElement(type_ === 'textarea' ? 'textarea' : 'input');
+      el.className = 'tsb-contact-input' + (type_ === 'textarea' ? ' tsb-contact-textarea' : '');
+      el.placeholder = placeholder;
+      if (type_ !== 'textarea') el.type = type_ || 'text';
+      return el;
+    }
+
+    var nomEl = field('Nom complet *', 'text');
+    var telEl = field('Téléphone *', 'tel');
+    var emailEl = field('Email *', 'email');
+    var msgEl = field('Votre message *', 'textarea');
+    var submitEl = document.createElement('button');
+    submitEl.className = 'tsb-contact-submit';
+    submitEl.textContent = 'Envoyer';
+
+    form.appendChild(nomEl);
+    form.appendChild(telEl);
+    form.appendChild(emailEl);
+    form.appendChild(msgEl);
+    form.appendChild(submitEl);
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'tsb-msg tsb-msg-bot';
+    wrapper.appendChild(form);
+    messagesEl.appendChild(wrapper);
+    scrollToBottom();
+
+    submitEl.addEventListener('click', async function () {
+      var nom = nomEl.value.trim();
+      var tel = telEl.value.trim();
+      var eml = emailEl.value.trim();
+      var msg = msgEl.value.trim();
+
+      if (!nom || !tel || !eml || !msg) {
+        submitEl.textContent = 'Veuillez remplir tous les champs';
+        setTimeout(function () { submitEl.textContent = 'Envoyer'; }, 2000);
+        return;
+      }
+
+      submitEl.disabled = true;
+      submitEl.textContent = 'Envoi en cours…';
+
+      try {
+        var r = await fetch(API_URL + '/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom: nom, telephone: tel, email: eml, message: msg, type: type }),
+        });
+        var d = await r.json();
+        if (d.ok) {
+          form.innerHTML = '';
+          var success = document.createElement('div');
+          success.className = 'tsb-contact-success';
+          success.textContent = '✅ Message envoyé ! L\'équipe de l\'ITS vous contactera très prochainement.';
+          form.appendChild(success);
+          var history = getHistory();
+          history.push({ role: 'assistant', content: '[Formulaire de contact soumis avec succès]' });
+          saveHistory(history);
+        } else {
+          submitEl.disabled = false;
+          submitEl.textContent = d.error || 'Erreur, réessayez';
+        }
+      } catch (e) {
+        submitEl.disabled = false;
+        submitEl.textContent = 'Erreur réseau, réessayez';
+      }
+      scrollToBottom();
+    });
+  }
+
   async function sendMessage(text) {
     if (isLoading || !text.trim()) return;
     isLoading = true;
@@ -114,10 +207,12 @@
       if (data.error) {
         appendMessage('bot', data.error);
       } else {
-        var reply = data.reply || '';
-        history.push({ role: 'assistant', content: reply });
+        var raw = data.reply || '';
+        var parsed = parseReply(raw);
+        history.push({ role: 'assistant', content: raw });
         saveHistory(history);
-        appendMessage('bot', reply);
+        if (parsed.text) appendMessage('bot', parsed.text);
+        if (parsed.formType) showContactForm(parsed.formType);
       }
     } catch (e) {
       removeTyping();

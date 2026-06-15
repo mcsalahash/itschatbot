@@ -3,6 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const OpenAI = require('openai');
+const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 const { scrapeFullSite } = require('./scraper');
 
@@ -17,6 +18,16 @@ const client = new OpenAI({
 });
 
 let scrapedContent = '';
+
+const mailer = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 function buildSystemPrompt() {
   const instructionsPath = path.join(__dirname, 'data', 'school-instructions.txt');
@@ -83,6 +94,50 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) {
     console.error('[server] Erreur /api/chat :', err.message);
     res.status(500).json({ error: 'Erreur serveur, réessayez dans un moment.' });
+  }
+});
+
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { nom, telephone, email, message, type } = req.body;
+    if (!nom || !telephone || !email || !message) {
+      return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
+    }
+
+    const sujet = type === 'inscription'
+      ? `[Inscription] Demande de ${nom}`
+      : `[Contact] Message de ${nom}`;
+
+    const corps = `
+Nouvelle demande reçue via le chatbot Sebti
+============================================
+Type       : ${type === 'inscription' ? 'Demande d\'inscription' : 'Message à la direction'}
+Nom        : ${nom}
+Téléphone  : ${telephone}
+Email      : ${email}
+Date       : ${new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Casablanca' })}
+
+Message :
+${message}
+============================================
+`;
+
+    await mailer.sendMail({
+      from: `"Chatbot Sebti" <${process.env.SMTP_USER}>`,
+      to: process.env.CONTACT_EMAIL,
+      replyTo: email,
+      subject: sujet,
+      text: corps,
+    });
+
+    const logLine = JSON.stringify({ date: new Date().toISOString(), type, nom, telephone, email, message }) + '\n';
+    fs.appendFileSync(path.join(__dirname, 'data', 'contacts.log'), logLine);
+
+    console.log(`[contact] ${sujet} — ${email}`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[server] Erreur /api/contact :', err.message);
+    res.status(500).json({ error: 'Erreur lors de l\'envoi. Veuillez réessayer.' });
   }
 });
 
