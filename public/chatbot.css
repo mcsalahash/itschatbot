@@ -155,6 +155,7 @@
   opacity: 0.85;
 }
 
+.tsb-header-reset,
 .tsb-header-close {
   background: none;
   border: none;
@@ -169,8 +170,15 @@
   outline: none;
 }
 
-.tsb-header-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+.tsb-header-reset { opacity: 0.85; }
+
+.tsb-header-reset:hover,
+.tsb-header-close:hover { background: rgba(255, 255, 255, 0.2); opacity: 1; }
+
+.tsb-header-reset svg {
+  width: 16px; height: 16px;
+  stroke: currentColor; fill: none; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
 }
 
 .tsb-header-close svg {
@@ -213,15 +221,51 @@
   display: flex;
   flex-direction: column;
   max-width: 82%;
+  position: relative;
 }
 
-.tsb-msg-bot {
-  align-self: flex-start;
+.tsb-msg-bot { align-self: flex-start; }
+.tsb-msg-user { align-self: flex-end; }
+
+/* Timestamp */
+.tsb-msg-time {
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 2px;
+  padding: 0 4px;
+}
+.tsb-msg-user .tsb-msg-time { text-align: right; }
+
+/* Bouton copier */
+.tsb-copy-btn {
+  position: absolute;
+  top: 4px;
+  right: -28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 3px;
+  color: #aaa;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+.tsb-msg:hover .tsb-copy-btn { opacity: 1; }
+.tsb-copy-btn svg {
+  width: 14px; height: 14px;
+  stroke: currentColor; fill: none; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
 }
 
-.tsb-msg-user {
-  align-self: flex-end;
+/* Markdown */
+.tsb-msg-content .tsb-list {
+  margin: 4px 0 4px 16px;
+  padding: 0;
 }
+.tsb-msg-content .tsb-list li { margin-bottom: 2px; }
+.tsb-msg-content a { color: var(--tsb-primary); }
 
 .tsb-msg-content {
   padding: 10px 14px;

@@ -118,6 +118,17 @@ app.post('/api/chat', async (req, res) => {
     });
 
     const reply = response.choices[0]?.message?.content || '';
+
+    const lastUser = sanitized.filter(m => m.role === 'user').pop();
+    if (lastUser) {
+      const logLine = JSON.stringify({
+        date: new Date().toISOString(),
+        question: lastUser.content,
+        reply: reply.slice(0, 300),
+      }) + '\n';
+      fs.appendFileSync(path.join(__dirname, 'data', 'chat.log'), logLine);
+    }
+
     res.json({ reply });
   } catch (err) {
     console.error('[server] Erreur /api/chat :', err.message);
