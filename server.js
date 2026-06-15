@@ -3,7 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const OpenAI = require('openai');
-const nodemailer = require('nodemailer');
+const fetch = require('node-fetch');
 const rateLimit = require('express-rate-limit');
 const { scrapeFullSite } = require('./scraper');
 
@@ -19,15 +19,42 @@ const client = new OpenAI({
 
 let scrapedContent = '';
 
-const mailer = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+async function getGraphToken() {
+  const url = `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`;
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: process.env.AZURE_CLIENT_ID,
+    client_secret: process.env.AZURE_CLIENT_SECRET,
+    scope: 'https://graph.microsoft.com/.default',
+  });
+  const res = await fetch(url, { method: 'POST', body });
+  const data = await res.json();
+  if (!data.access_token) throw new Error('Token Graph invalide : ' + JSON.stringify(data));
+  return data.access_token;
+}
+
+async function sendGraphMail({ to, subject, body }) {
+  const token = await getGraphToken();
+  const from = process.env.MAIL_FROM;
+  const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(from)}/sendMail`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: {
+        subject,
+        body: { contentType: 'Text', content: body },
+        toRecipients: [{ emailAddress: { address: to } }],
+      },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Graph sendMail ${res.status} : ${err}`);
+  }
+}
 
 function buildSystemPrompt() {
   const instructionsPath = path.join(__dirname, 'data', 'school-instructions.txt');
@@ -122,12 +149,10 @@ ${message}
 ============================================
 `;
 
-    await mailer.sendMail({
-      from: `"Chatbot Sebti" <${process.env.SMTP_USER}>`,
+    await sendGraphMail({
       to: process.env.CONTACT_EMAIL,
-      replyTo: email,
       subject: sujet,
-      text: corps,
+      body: corps,
     });
 
     const logLine = JSON.stringify({ date: new Date().toISOString(), type, nom, telephone, email, message }) + '\n';
