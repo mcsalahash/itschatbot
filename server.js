@@ -69,6 +69,7 @@ async function refreshContent() {
   console.log('[server] Contenu mis à jour.');
 }
 
+app.set('trust proxy', 1);
 app.use(express.json());
 
 app.use((req, res, next) => {
