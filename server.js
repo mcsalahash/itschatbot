@@ -46,7 +46,7 @@ async function sendGraphMail({ to, subject, body }) {
       message: {
         subject,
         body: { contentType: 'Text', content: body },
-        toRecipients: [{ emailAddress: { address: to } }],
+        toRecipients: to.split(',').map(function(a) { return { emailAddress: { address: a.trim() } }; }),
       },
     }),
   });
